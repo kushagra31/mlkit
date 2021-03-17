@@ -16,7 +16,10 @@
     <string name="start_over">Start over</string>
     <string name="menu_item_settings">Settings</string>
     <string name="select_image">Select image</string>
-
+    <string name="tfe_od_app_name" translation_description="Object Detection demo app [CHAR_LIMIT=40]">TFL Detect</string>
+    <string name="tfe_od_camera_error" translation_description="Error regarding camera support[CHAR_LIMIT=40]">This device doesn\'t support Camera2 API.</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
     <!-- Settings related strings. -->
     <string name="pref_screen_title_live_preview">Live preview settings</string>
     <string name="pref_screen_title_still_image">Still image settings</string>

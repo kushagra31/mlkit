@@ -27,6 +27,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -35,6 +36,10 @@ import android.widget.ToggleButton;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+
+import com.fxn.BubbleTabBar;
+import com.fxn.OnBubbleClickListener;
 import com.google.android.gms.common.annotation.KeepName;
 import com.google.mlkit.common.model.LocalModel;
 import com.google.mlkit.vision.demo.CameraSource;
@@ -42,6 +47,7 @@ import com.google.mlkit.vision.demo.CameraSourcePreview;
 import com.google.mlkit.vision.demo.GraphicOverlay;
 import com.google.mlkit.vision.demo.R;
 import com.google.mlkit.vision.demo.java.barcodescanner.BarcodeScannerProcessor;
+import com.google.mlkit.vision.demo.java.detection.DetectorActivity;
 import com.google.mlkit.vision.demo.java.facedetector.FaceDetectorProcessor;
 import com.google.mlkit.vision.demo.java.labeldetector.LabelDetectorProcessor;
 import com.google.mlkit.vision.demo.java.objectdetector.ObjectDetectorProcessor;
@@ -53,28 +59,21 @@ import com.google.mlkit.vision.face.FaceDetectorOptions;
 import com.google.mlkit.vision.label.custom.CustomImageLabelerOptions;
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions;
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions;
 import com.google.mlkit.vision.pose.PoseDetectorOptionsBase;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Live preview demo for ML Kit APIs. */
 @KeepName
 public final class LivePreviewActivity extends AppCompatActivity
     implements OnRequestPermissionsResultCallback,
         OnItemSelectedListener,
         CompoundButton.OnCheckedChangeListener {
   private static final String OBJECT_DETECTION = "Object Detection";
-  private static final String OBJECT_DETECTION_CUSTOM = "Custom Object Detection (Bird)";
-  private static final String CUSTOM_AUTOML_OBJECT_DETECTION =
-      "Custom AutoML Object Detection (Flower)";
   private static final String FACE_DETECTION = "Face Detection";
   private static final String TEXT_RECOGNITION = "Text Recognition";
   private static final String BARCODE_SCANNING = "Barcode Scanning";
   private static final String IMAGE_LABELING = "Image Labeling";
-  private static final String IMAGE_LABELING_CUSTOM = "Custom Image Labeling (Bird)";
-  private static final String CUSTOM_AUTOML_LABELING = "Custom AutoML Image Labeling (Flower)";
   private static final String POSE_DETECTION = "Pose Detection";
 
   private static final String TAG = "LivePreviewActivity";
@@ -101,30 +100,55 @@ public final class LivePreviewActivity extends AppCompatActivity
       Log.d(TAG, "graphicOverlay is null");
     }
 
-    Spinner spinner = findViewById(R.id.spinner);
-    List<String> options = new ArrayList<>();
-    options.add(OBJECT_DETECTION);
-    options.add(OBJECT_DETECTION_CUSTOM);
-    options.add(CUSTOM_AUTOML_OBJECT_DETECTION);
-    options.add(FACE_DETECTION);
-    options.add(TEXT_RECOGNITION);
-    options.add(BARCODE_SCANNING);
-    options.add(IMAGE_LABELING);
-    options.add(IMAGE_LABELING_CUSTOM);
-    options.add(CUSTOM_AUTOML_LABELING);
-    options.add(POSE_DETECTION);
-
-    // Creating adapter for spinner
-    ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
-    // Drop down layout style - list view with radio button
-    dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    // attaching data adapter to spinner
-    spinner.setAdapter(dataAdapter);
-    spinner.setOnItemSelectedListener(this);
-
     ToggleButton facingSwitch = findViewById(R.id.facing_switch);
     facingSwitch.setOnCheckedChangeListener(this);
+    BubbleTabBar bubbleTabBar1= findViewById(R.id.bubbleTabBar1);
+    bubbleTabBar1.addBubbleListener(new OnBubbleClickListener() {
+  @Override
+  public void onBubbleClick(int i) {
+    if(i==R.id.navigator)
+    {
+      Intent intent = new Intent(getApplicationContext(), DetectorActivity.class);
+      startActivity(intent);
 
+    }
+    if(i==R.id.log)
+    {
+
+      preview.stop();
+      if (allPermissionsGranted()) {
+        createCameraSource(TEXT_RECOGNITION);
+        startCameraSource();
+      } else {
+        getRuntimePermissions();
+      }
+    }
+    if(i==R.id.lo)
+    {
+      preview.stop();
+      if (allPermissionsGranted()) {
+        createCameraSource(BARCODE_SCANNING);
+        startCameraSource();
+      } else {
+        getRuntimePermissions();
+      }
+    }
+    if(i==R.id.lo1)
+    {
+      preview.stop();
+      if (allPermissionsGranted()) {
+        createCameraSource(IMAGE_LABELING);
+        startCameraSource();
+      } else {
+        getRuntimePermissions();
+      }
+
+    }
+
+
+
+  }
+});
     ImageView settingsButton = findViewById(R.id.settings_button);
     settingsButton.setOnClickListener(
         v -> {
@@ -184,33 +208,11 @@ public final class LivePreviewActivity extends AppCompatActivity
     try {
       switch (model) {
         case OBJECT_DETECTION:
-          Log.i(TAG, "Using Object Detector Processor");
-          ObjectDetectorOptions objectDetectorOptions =
-              PreferenceUtils.getObjectDetectorOptionsForLivePreview(this);
-          cameraSource.setMachineLearningFrameProcessor(
-              new ObjectDetectorProcessor(this, objectDetectorOptions));
+
+          Log.i(TAG, "Using on-device Text recognition Processor");
+          cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(this));
           break;
-        case OBJECT_DETECTION_CUSTOM:
-          Log.i(TAG, "Using Custom Object Detector Processor");
-          LocalModel localModel =
-              new LocalModel.Builder()
-                  .setAssetFilePath("custom_models/bird_classifier.tflite")
-                  .build();
-          CustomObjectDetectorOptions customObjectDetectorOptions =
-              PreferenceUtils.getCustomObjectDetectorOptionsForLivePreview(this, localModel);
-          cameraSource.setMachineLearningFrameProcessor(
-              new ObjectDetectorProcessor(this, customObjectDetectorOptions));
-          break;
-        case CUSTOM_AUTOML_OBJECT_DETECTION:
-          Log.i(TAG, "Using Custom AutoML Object Detector Processor");
-          LocalModel customAutoMLODTLocalModel =
-              new LocalModel.Builder().setAssetManifestFilePath("automl/manifest.json").build();
-          CustomObjectDetectorOptions customAutoMLODTOptions =
-              PreferenceUtils.getCustomObjectDetectorOptionsForLivePreview(
-                  this, customAutoMLODTLocalModel);
-          cameraSource.setMachineLearningFrameProcessor(
-              new ObjectDetectorProcessor(this, customAutoMLODTOptions));
-          break;
+
         case TEXT_RECOGNITION:
           Log.i(TAG, "Using on-device Text recognition Processor");
           cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(this));
@@ -231,28 +233,7 @@ public final class LivePreviewActivity extends AppCompatActivity
           cameraSource.setMachineLearningFrameProcessor(
               new LabelDetectorProcessor(this, ImageLabelerOptions.DEFAULT_OPTIONS));
           break;
-        case IMAGE_LABELING_CUSTOM:
-          Log.i(TAG, "Using Custom Image Label Detector Processor");
-          LocalModel localClassifier =
-              new LocalModel.Builder()
-                  .setAssetFilePath("custom_models/bird_classifier.tflite")
-                  .build();
-          CustomImageLabelerOptions customImageLabelerOptions =
-              new CustomImageLabelerOptions.Builder(localClassifier).build();
-          cameraSource.setMachineLearningFrameProcessor(
-              new LabelDetectorProcessor(this, customImageLabelerOptions));
-          break;
-        case CUSTOM_AUTOML_LABELING:
-          Log.i(TAG, "Using Custom AutoML Image Label Detector Processor");
-          LocalModel customAutoMLLabelLocalModel =
-              new LocalModel.Builder().setAssetManifestFilePath("automl/manifest.json").build();
-          CustomImageLabelerOptions customAutoMLLabelOptions =
-              new CustomImageLabelerOptions.Builder(customAutoMLLabelLocalModel)
-                  .setConfidenceThreshold(0)
-                  .build();
-          cameraSource.setMachineLearningFrameProcessor(
-              new LabelDetectorProcessor(this, customAutoMLLabelOptions));
-          break;
+
         case POSE_DETECTION:
           PoseDetectorOptionsBase poseDetectorOptions =
               PreferenceUtils.getPoseDetectorOptionsForLivePreview(this);
@@ -267,7 +248,8 @@ public final class LivePreviewActivity extends AppCompatActivity
         default:
           Log.e(TAG, "Unknown model: " + model);
       }
-    } catch (RuntimeException e) {
+    }
+    catch (RuntimeException e) {
       Log.e(TAG, "Can not create image processor: " + model, e);
       Toast.makeText(
               getApplicationContext(),
